@@ -1,0 +1,231 @@
+---
+import Projects from "../../src/content/projects/FormatLayout.astro";
+import Partners from "../../src/content/partners/FormatLayout.astro";
+import Experience from "../../src/content/experience/FormatLayout.astro";
+import Design from "../../src/content/design/FormatLayout.astro";
+import Head from "./Head.astro";
+import ThemeController from "./ThemeController.astro";
+import wm from "../assets/wm.svg";
+---
+
+<div
+	class="grid grid-cols-1 items-center border rounded-2xl gap-5 h-full overflow-auto shadow-md/30 shadow-warning no-scrollbar p-5 lg:p-20 md:p-20 sm:p-20"
+>
+	<button
+		class="button_blogs flex w-fit btn btn-soft absolute right-10 top-10 -mb-40 btn-xs md:btn-md lg:btn-lg"
+		>Blogs</button
+	>
+	<button
+		class="button_hasqibar flex w-fit btn btn-soft absolute left-10 top-10 -mb-40 btn-xs md:btn-md lg:btn-lg"
+	>
+		<img src={wm.src} alt="" class="size-[1.2em] invert-50" />
+		Hasqibar
+	</button>
+	<ThemeController />
+	<Head />
+	<div
+		class="grid grid-cols-1h-fit gap-10 p-5 items-center lg:grid-cols-4 md:grid-cols-2 xs:grid-cols-1"
+	>
+		<!-- projects -->
+
+		<button
+			class="projects btn btn-soft btn-primary p-5"
+			onclick="my_modal_1.showModal()"
+		>
+			<div class="flex flex-row gap-4 place-content-evenly w-fit">
+				<div class="flex h-full w-full">
+					<svg
+						class="w-full h-full"
+						aria-hidden="true"
+						xmlns="http://www.w3.org/2000/svg"
+						width="24"
+						height="24"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke="currentColor"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M15 4h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3m0 3h6m-6 7 2 2 4-4m-5-9v4h4V3h-4Z"
+						></path>
+					</svg>
+				</div>
+				<div class="flex h-full w-full font-bold text-xl">Projects</div>
+			</div>
+		</button>
+		<dialog id="my_modal_1" class="modal">
+			<div
+				id="modal-scroll-container1"
+				class="modal-box w-full max-w-full h-full max-h-full no-scrollbar"
+			>
+				<Projects />
+			</div>
+		</dialog>
+		<!-- projects -->
+		<!-- partners -->
+		<button
+			class="partners btn btn-soft btn-error p-5"
+			onclick="my_modal_2.showModal()"
+		>
+			<div class="flex flex-row gap-4 place-content-evenly w-fit">
+				<div class="flex h-full w-full">
+					<svg
+						class="w-full h-full"
+						aria-hidden="true"
+						xmlns="http://www.w3.org/2000/svg"
+						width="24"
+						height="24"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke="currentColor"
+							stroke-linecap="round"
+							stroke-width="2"
+							d="M16 19h4a1 1 0 0 0 1-1v-1a3 3 0 0 0-3-3h-2m-2.236-4a3 3 0 1 0 0-4M3 18v-1a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Zm8-10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+						></path>
+					</svg>
+				</div>
+				<div class="flex h-full w-full font-bold text-xl">Partners</div>
+			</div>
+		</button>
+		<dialog id="my_modal_2" class="modal">
+			<div
+				id="modal-scroll-container2"
+				class="modal-box w-full max-w-full h-full max-h-full no-scrollbar"
+			>
+				<Partners />
+			</div>
+		</dialog>
+		<!-- partners -->
+		<!-- design work -->
+		<button
+			class="design-work btn btn-soft btn-info p-5"
+			onclick="my_modal_3.showModal()"
+		>
+			<div class="flex flex-row gap-4 place-content-evenly w-fit">
+				<div class="flex h-full w-full">
+					<svg
+						class="w-full h-full"
+						aria-hidden="true"
+						xmlns="http://www.w3.org/2000/svg"
+						width="24"
+						height="24"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke="currentColor"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="m14.304 4.844 2.852 2.852M7 7H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4.5m2.409-9.91a2.017 2.017 0 0 1 0 2.853l-6.844 6.844L8 14l.713-3.565 6.844-6.844a2.015 2.015 0 0 1 2.852 0Z"
+						></path>
+					</svg>
+				</div>
+				<div class="flex h-full w-full font-bold text-xl">Designs</div>
+			</div>
+		</button>
+		<dialog id="my_modal_3" class="modal">
+			<div
+				id="modal-scroll-container3"
+				class="modal-box w-full max-w-full h-full max-h-full no-scrollbar"
+			>
+				<Design />
+			</div>
+		</dialog>
+		<!-- design work -->
+		<!-- Experience -->
+		<button
+			class="experience btn btn-soft btn-warning"
+			onclick="my_modal_4.showModal()"
+		>
+			<div class="flex flex-row gap-4 place-content-evenly w-fit">
+				<div class="flex h-full w-full">
+					<svg
+						class="w-full h-full"
+						aria-hidden="true"
+						xmlns="http://www.w3.org/2000/svg"
+						width="24"
+						height="24"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke="currentColor"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M18.122 17.645a7.185 7.185 0 0 1-2.656 2.495 7.06 7.06 0 0 1-3.52.853 6.617 6.617 0 0 1-3.306-.718 6.73 6.73 0 0 1-2.54-2.266c-2.672-4.57.287-8.846.887-9.668A4.448 4.448 0 0 0 8.07 6.31 4.49 4.49 0 0 0 7.997 4c1.284.965 6.43 3.258 5.525 10.631 1.496-1.136 2.7-3.046 2.846-6.216 1.43 1.061 3.985 5.462 1.754 9.23Z"
+						></path>
+					</svg>
+				</div>
+				<div class="flex h-full w-full font-bold text-xl">
+					Experiences
+				</div>
+			</div>
+		</button>
+		<dialog id="my_modal_4" class="modal">
+			<div
+				id="modal-scroll-container4"
+				class="modal-box w-full max-w-full h-full max-h-full no-scrollbar"
+			>
+				<Experience />
+			</div>
+		</dialog>
+		<!-- Experience -->
+	</div>
+	<div class="flex justify-center">
+		<div
+			class="m-5 gap-10 grid grid-rows-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 w-fit"
+		>
+			<div>
+				<a href="" class="sos_1">
+					<button
+						class="btn btn-dash flex w-full btn-info"
+					>
+					<div class="font-extralight">
+						LinkedIn
+					</div>
+					</button>
+				</a>
+			</div>
+			<div>
+				<a href="" class="sos_2">
+					<button
+						class="btn btn-dash flex w-full btn-primary"
+					>
+						<div class="font-extralight">
+							Email
+						</div>
+					</button>
+					<div></div>
+				</a>
+			</div>
+			<div>
+				<a href="" class="sos_3">
+					<button
+						class="btn btn-dash flex w-full btn-error"
+					>
+					<div class="font-extralight">
+						Instagram
+					</div>
+					</button>
+				</a>
+			</div>
+			<div>
+				<a href="" class="sos_4">
+					<button
+						class="btn btn-dash flex w-full btn-success"
+					>
+					<div class="font-extralight">
+						WhatsApp
+					</div>
+					</button>
+				</a>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,149 @@
+---
+import "../../assets/app.css";
+export const prerender = false;
+
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+/* --- SECURITY UPGRADE --- */
+const user = import.meta.env.ADMIN_USER;
+const pass = import.meta.env.ADMIN_PASS;
+
+// 1. Cek apakah Env Var sudah diset di Hosting
+if (!user || !pass) {
+  throw new Error("FATAL: ADMIN_USER dan ADMIN_PASS belum diset di Environment Variable Hosting!");
+}
+
+// 2. Cek Authorization Header
+const auth = Astro.request.headers.get("authorization");
+if (!auth) {
+  return new Response(null, {
+    status: 401,
+    headers: { "WWW-Authenticate": 'Basic realm="Admin Area"' },
+  });
+}
+
+// 3. Validasi Password
+const [u, p] = Buffer.from(auth.split(" ")[1], "base64").toString().split(":");
+if (u !== user || p !== pass) {
+  return new Response("Unauthorized Access!", { status: 401 });
+}
+/* --- END SECURITY --- */
+// Config Directory
+const directories = {
+  design: 'src/content/design/pages',
+  projects: 'src/content/projects/pages',
+  partners: 'src/content/partners/pages',
+  experience: 'src/content/experience/pages'
+};
+
+// --- LOGIC DELETE ---
+let message = "";
+if (Astro.request.method === "POST") {
+    try {
+        const formData = await Astro.request.formData();
+        const action = formData.get("action");
+        
+        if (action === "delete") {
+            const filePath = formData.get("filePath") as string;
+            // Hapus file MDX
+            await fs.unlink(path.join(process.cwd(), filePath));
+            message = "🗑️ Postingan berhasil dihapus!";
+        }
+    } catch (e) {
+        message = `Error: ${e}`;
+    }
+}
+
+// --- LOAD DATA POSTS ---
+// Kita scan folder satu-satu buat dapet list file
+let allPosts = [];
+
+for (const [category, dirPath] of Object.entries(directories)) {
+    try {
+        const fullDir = path.join(process.cwd(), dirPath);
+        const files = await fs.readdir(fullDir);
+        
+        for (const file of files) {
+            if (file.endsWith('.mdx')) {
+                const content = await fs.readFile(path.join(fullDir, file), 'utf-8');
+                // Regex simple buat ambil Title dari frontmatter
+                const titleMatch = content.match(/title:\s*"(.*)"/);
+                const title = titleMatch ? titleMatch[1] : file;
+                
+                allPosts.push({
+                    category,
+                    filename: file,
+                    title,
+                    path: path.join(dirPath, file) // Path relative buat identifier hapus
+                });
+            }
+        }
+    } catch (e) {
+        // Folder mungkin belum ada, skip aja
+    }
+}
+---
+
+<html lang="en">
+<head><title>Admin Dashboard</title></head>
+<body class="bg-slate-950 text-slate-50 min-h-screen font-sans p-8">
+    
+    <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-400">Manage Content</h1>
+            <a href="/" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-bold shadow-lg shadow-blue-500/20 transition">
+                Back To Home
+            </a>
+            <a href="/admin/editor" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-bold shadow-lg shadow-blue-500/20 transition">
+                + New Post
+            </a>
+        </div>
+
+        {message && <div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6">{message}</div>}
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+                    <tr>
+                        <th class="p-4">Title</th>
+                        <th class="p-4">Category</th>
+                        <th class="p-4">File Name</th>
+                        <th class="p-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {allPosts.map((post) => (
+                        <tr class="hover:bg-slate-800/50 transition">
+                            <td class="p-4 font-bold text-slate-200">{post.title}</td>
+                            <td class="p-4">
+                                <span class="px-2 py-1 rounded text-xs font-mono bg-slate-800 text-slate-400 border border-slate-700">
+                                    {post.category}
+                                </span>
+                            </td>
+                            <td class="p-4 text-slate-500 font-mono">{post.filename}</td>
+                            <td class="p-4 flex justify-end gap-3">
+                                <a href={`/admin/editor?cat=${post.category}&file=${post.filename}`} 
+                                   class="text-blue-400 hover:text-blue-300 font-semibold">
+                                    Edit
+                                </a>
+                                
+                                <form method="POST" onsubmit="return confirm('Yakin mau hapus permanen?');">
+                                    <input type="hidden" name="action" value="delete" />
+                                    <input type="hidden" name="filePath" value={post.path} />
+                                    <button type="submit" class="text-red-400 hover:text-red-300 font-semibold">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    ))}
+                    {allPosts.length === 0 && (
+                        <tr><td colspan="4" class="p-8 text-center text-slate-500">Belum ada postingan.</td></tr>
+                    )}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

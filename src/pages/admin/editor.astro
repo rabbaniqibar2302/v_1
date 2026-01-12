@@ -1,0 +1,201 @@
+---
+import "../../assets/app.css";
+export const prerender = false;
+
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+/* --- SECURITY UPGRADE --- */
+const user = import.meta.env.ADMIN_USER;
+const pass = import.meta.env.ADMIN_PASS;
+
+// 1. Cek apakah Env Var sudah diset di Hosting
+if (!user || !pass) {
+  throw new Error("FATAL: ADMIN_USER dan ADMIN_PASS belum diset di Environment Variable Hosting!");
+}
+
+// 2. Cek Authorization Header
+const auth = Astro.request.headers.get("authorization");
+if (!auth) {
+  return new Response(null, {
+    status: 401,
+    headers: { "WWW-Authenticate": 'Basic realm="Admin Area"' },
+  });
+}
+
+// 3. Validasi Password
+const [u, p] = Buffer.from(auth.split(" ")[1], "base64").toString().split(":");
+if (u !== user || p !== pass) {
+  return new Response("Unauthorized Access!", { status: 401 });
+}
+/* --- END SECURITY --- */
+
+// Config Folder
+const directories = {
+  design: { mdx: 'src/content/design/pages', img: 'public/assets/designs' },
+  projects: { mdx: 'src/content/projects/pages', img: 'public/assets/projects' },
+  partners: { mdx: 'src/content/partners/pages', img: 'public/assets/partners' },
+  experience: { mdx: 'src/content/experience/pages', img: 'public/assets/experiences' }
+};
+
+// Ambil Query Params (buat tau kita lagi Edit atau Create)
+const url = new URL(Astro.request.url);
+const editCategory = url.searchParams.get('cat');
+const editFilename = url.searchParams.get('file');
+const isEditMode = !!(editCategory && editFilename);
+
+// Variable default buat Form
+let formValues = { title: '', description: '', url: '', content: '', category: '', heroImage: '' };
+let message = '';
+
+// --- LOGIC 1: PRE-FILL FORM KALO EDIT ---
+if (isEditMode && Astro.request.method === "GET") {
+    try {
+        const filePath = path.join(process.cwd(), directories[editCategory].mdx, editFilename);
+        const fileContent = await fs.readFile(filePath, 'utf-8');
+        
+        // Manual Parse Frontmatter biar gak perlu library tambahan
+        const titleMatch = fileContent.match(/title:\s*"(.*)"/);
+        const descMatch = fileContent.match(/description:\s*"(.*)"/);
+        const urlMatch = fileContent.match(/url:\s*"(.*)"/);
+        const imgMatch = fileContent.match(/heroImage:\s*"(.*)"/);
+        const contentSplit = fileContent.split('---');
+        const body = contentSplit.slice(2).join('---').trim();
+
+        formValues = {
+            category: editCategory,
+            title: titleMatch ? titleMatch[1] : '',
+            description: descMatch ? descMatch[1] : '',
+            url: urlMatch ? urlMatch[1] : '',
+            heroImage: imgMatch ? imgMatch[1] : '',
+            content: body
+        };
+    } catch (e) {
+        message = "Gagal load file buat diedit.";
+    }
+}
+
+// --- LOGIC 2: SAVE DATA (CREATE / UPDATE) ---
+if (Astro.request.method === "POST") {
+    try {
+        const data = await Astro.request.formData();
+        const category = data.get("category");
+        const title = data.get("title");
+        const description = data.get("description");
+        const extUrl = data.get("url");
+        const content = data.get("content");
+        const imageFile = data.get("heroImage");
+        const originalFilename = data.get("originalFilename"); // Hidden input
+
+        // Generate Slug
+        const slug = title.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+        const fileName = `${slug}.mdx`;
+
+        // Handle Image
+        let heroImagePath = data.get("existingImage") || ""; // Default pake gambar lama
+        if (imageFile && imageFile.size > 0) {
+            // Kalau upload gambar baru
+            const buffer = Buffer.from(await imageFile.arrayBuffer());
+            const targetImgDir = path.join(process.cwd(), directories[category].img);
+            await fs.mkdir(targetImgDir, { recursive: true });
+            
+            const ext = path.extname(imageFile.name);
+            const imgName = `${slug}${ext}`;
+            await fs.writeFile(path.join(targetImgDir, imgName), buffer);
+            heroImagePath = path.join(directories[category].img.replace('public', ''), imgName);
+        }
+
+        // Construct MDX
+        const mdxContent = `---
+title: "${title}"
+description: "${description}"
+heroImage: "${heroImagePath}"
+url: "${extUrl}"
+---
+
+${content}`;
+
+        // Save File
+        const targetDir = path.join(process.cwd(), directories[category].mdx);
+        await fs.mkdir(targetDir, { recursive: true });
+        
+        // Kalau Edit & Judul berubah, file lama (dengan nama lama) dihapus biar gak duplikat
+        if (isEditMode && originalFilename && originalFilename !== fileName) {
+             try { await fs.unlink(path.join(targetDir, originalFilename)); } catch(e) {}
+        }
+
+        await fs.writeFile(path.join(targetDir, fileName), mdxContent);
+        
+        return Astro.redirect('/admin'); // Balik ke dashboard
+
+    } catch (e) {
+        message = `Error: ${e}`;
+    }
+}
+---
+
+<html lang="en">
+<head><title>{isEditMode ? 'Edit Post' : 'New Post'}</title></head>
+<body class="bg-slate-950 text-slate-50 min-h-screen font-sans p-8">
+    
+    <div class="max-w-3xl mx-auto">
+        <a href="/admin" class="text-slate-400 hover:text-white mb-6 inline-block">← Back to Dashboard</a>
+        
+        <h1 class="text-3xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            {isEditMode ? 'Edit Post' : 'Create New Post'}
+        </h1>
+
+        {message && <div class="bg-red-500/10 text-red-400 p-4 rounded mb-4">{message}</div>}
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-6 bg-slate-900/50 p-8 rounded-2xl border border-slate-800">
+            
+            <input type="hidden" name="originalFilename" value={editFilename || ''} />
+            <input type="hidden" name="existingImage" value={formValues.heroImage} />
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-400 mb-2">Category</label>
+                    <select name="category" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3" required>
+                        <option value="projects" selected={formValues.category === 'projects'}>Projects</option>
+                        <option value="partners" selected={formValues.category === 'partners'}>Partners</option>
+                        <option value="design" selected={formValues.category === 'design'}>Design</option>
+                        <option value="experience" selected={formValues.category === 'experience'}>Experience</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-400 mb-2">Title</label>
+                    <input type="text" name="title" value={formValues.title} class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3" required />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-400 mb-2">Description</label>
+                <input type="text" name="description" value={formValues.description} class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-400 mb-2">External URL</label>
+                <input type="text" name="url" value={formValues.url} class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-400 mb-2">
+                    Hero Image 
+                    {formValues.heroImage && <span class="text-xs font-normal text-green-400">(Current: {formValues.heroImage})</span>}
+                </label>
+                <input type="file" name="heroImage" accept="image/*" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-400" />
+                <p class="text-xs text-slate-500 mt-1">*Leave empty to keep current image</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-400 mb-2">Content (MDX)</label>
+                <textarea name="content" rows="10" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 font-mono">{formValues.content}</textarea>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition">
+                {isEditMode ? 'Update Post' : 'Create Post'}
+            </button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,125 @@
+---
+// Components/FullScreenModal.astro
+---
+
+<button class="btn" onclick="my_modal_fullscreen.showModal()">Open Full Screen Modal</button>
+
+<dialog id="my_modal_fullscreen" class="modal">
+  <div class="modal-box w-full h-full max-w-none max-h-none rounded-none p-0 overflow-hidden bg-base-100">
+    
+    <form method="dialog" class="absolute top-4 right-4 z-50">
+      <button class="btn btn-circle btn-ghost">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </form>
+
+    <div id="modal-scroll-container" class="w-full h-full overflow-y-auto overflow-x-hidden">
+        
+        <div class="modal-content-wrapper p-10 min-h-[200vh]">
+            <h1 class="text-5xl font-bold mb-10 text-primary">Hello GSAP & Astro!</h1>
+            
+            <p class="text-xl mb-4">Scroll ke bawah untuk melihat efek smooth...</p>
+            
+            <div class="box w-20 h-20 bg-accent mt-[50vh] mx-auto rounded-xl"></div>
+            
+            <div class="box w-20 h-20 bg-secondary mt-[50vh] mx-auto rounded-xl"></div>
+
+            <p class="text-xl mt-[20vh] mb-10">End of content.</p>
+        </div>
+
+    </div>
+
+  </div>
+</dialog>
+
+<script>
+    import gsap from "gsap";
+    import { ScrollTrigger } from "gsap/ScrollTrigger";
+    import Lenis from "lenis"; // npm install lenis
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Fungsi inisialisasi
+    const initModalScroll = () => {
+        const modal = document.getElementById('my_modal_fullscreen');
+        const scrollContainer = document.getElementById('modal-scroll-container');
+
+        // 1. Setup Lenis (Pengganti ScrollSmoother untuk Container)
+        const lenis = new Lenis({
+            wrapper: scrollContainer, // Target container modal, bukan window
+            content: document.querySelector('.modal-content-wrapper'), // Target isi konten
+            duration: 1.2, // Atur kehalusan (sama seperti smooth: 1.2 di GSAP)
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            gestureDirection: 'vertical',
+            smooth: true,
+        });
+
+        // 2. Integrasikan Lenis dengan GSAP ScrollTrigger
+        // Agar animasi GSAP sinkron dengan scroll Lenis
+        lenis.on('scroll', ScrollTrigger.update);
+
+        gsap.ticker.add((time) => {
+            lenis.raf(time * 1000);
+        });
+        
+        gsap.ticker.lagSmoothing(0);
+
+        // 3. Setup ScrollTrigger Proxy
+        // Memberi tahu GSAP bahwa "scroller" kita adalah si container modal, bukan window
+        ScrollTrigger.scrollerProxy(scrollContainer, {
+            scrollTop(value) {
+                return arguments.length ? lenis.scrollTo(value, { immediate: true }) : lenis.scroll;
+            },
+            getBoundingClientRect() {
+                return { top: 0, left: 0, width: scrollContainer.clientWidth, height: scrollContainer.clientHeight };
+            }
+        });
+
+        // 4. Contoh Animasi GSAP di dalam Modal
+        const boxes = document.querySelectorAll('.box');
+        boxes.forEach(box => {
+            gsap.to(box, {
+                rotation: 360,
+                duration: 2,
+                scrollTrigger: {
+                    trigger: box,
+                    scroller: scrollContainer, // WAJIB: Definisikan scroller custom
+                    start: "top 80%",
+                    end: "bottom 20%",
+                    scrub: true,
+                    // markers: true // Hapus comment untuk debug
+                }
+            });
+        });
+
+        // Hentikan scroll utama (body) saat modal buka
+        // DaisyUI modal <dialog> biasanya sudah handle backdrop, 
+        // tapi untuk keamanan UX smooth scroll:
+        modal.addEventListener('close', () => {
+            lenis.destroy(); // Bersihkan memori saat tutup
+        });
+    };
+
+    // Jalankan script saat modal dibuka
+    // Kita gunakan MutationObserver atau event listener pada tombol trigger
+    const modalElement = document.getElementById('my_modal_fullscreen');
+    
+    // Observer untuk mendeteksi kapan modal mendapat atribut 'open'
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'open') {
+                const isOpen = modalElement.hasAttribute('open');
+                if (isOpen) {
+                    // Beri sedikit delay agar layout render dulu
+                    setTimeout(() => {
+                        initModalScroll();
+                        ScrollTrigger.refresh();
+                    }, 100);
+                }
+            }
+        });
+    });
+
+    observer.observe(modalElement, { attributes: true });
+
+</script>

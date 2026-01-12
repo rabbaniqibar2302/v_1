@@ -1,0 +1,57 @@
+---
+interface Post {
+    frontmatter: {
+        title: string;
+        description: string;
+        heroImage: string;
+        url: string;
+    };
+}
+const matches = import.meta.glob("../../content/design/pages/*.mdx", {
+    eager: true,
+});
+const posts = Object.values(matches) as Post[];
+---
+<div class="modal-content-wrapper3">
+<div
+    class="text-slate-50 w-full h-full overflow-auto no-scrollbar bg-blue-950 p-5 rounded-2xl border border-slate-500/40">
+    <div class="divider pb-10">
+        <b class="text-4xl">Design Work</b>
+    </div>
+    <div class="designs grid gap-10 px-4 lg:grid-cols-3 sm:grid-cols-2">
+        {
+            posts.map((post) => (
+        <a href={post.frontmatter.url}>
+        <div
+            class="card bg-slate-100-500/0 shadow-blue-500/50 hover:shadow-blue-450/50 hover:shadow-lg transition duration-500 ease-in-out"
+        >
+            <figure>
+                <img
+                    src={post.frontmatter.heroImage}
+                    alt="img"
+                    class="rounded-xl"
+                />
+            </figure>
+            <div class="card-body gap-5">
+                <h2 class="card-title text-2xl">
+                    {post.frontmatter.title}
+                </h2>
+                <p>
+                    {post.frontmatter.description}
+                </p>
+            </div>
+        </div>
+        </a>
+        ))
+        }
+    </div>
+</div>
+<div class="modal-action sticky bottom-2 right-2">
+    <form method="dialog">
+        <button class="btn btn-soft btn-info md:btn-md lg:btn-lg ">
+            Back To Home
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="size-[1.2em]"><path stroke-linecap="round" stroke-linejoin="round" d="M4 21V9l8-6l8 6v12h-6v-7h-4v7z" /></svg>
+        </button>
+    </form>
+</div>
+</div>

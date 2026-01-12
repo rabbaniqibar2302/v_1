@@ -1,0 +1,193 @@
+---
+import "../assets/app.css";
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/src/assets/wm.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>HSQBR</title>
+	</head>
+	<body>
+		<slot />
+		<script>
+			// importing
+			import { gsap } from "gsap";
+			import { ScrollTrigger } from "gsap/ScrollTrigger";
+			import Lenis from "lenis";
+			// importing
+
+			// smoothscroll---------------
+			function scroll_animasi(
+				name_of_modal:string,
+				name_of_modal_scroll:string,
+				name_of_modal_content:string,
+			){
+				gsap.registerPlugin(ScrollTrigger);
+				const initModalScroll = () => {
+					const modal = document.getElementById(name_of_modal);
+					const scrollContainer = document.getElementById(name_of_modal_scroll);
+					const lenis = new Lenis({
+						wrapper: scrollContainer,
+						content: document.querySelector("."+name_of_modal_content),
+						duration: 1.2,
+						easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+						gestureDirection: "vertical",
+						smooth: true,
+					});
+					lenis.on("scroll", ScrollTrigger.update);
+				
+					gsap.ticker.add((time) => {
+						lenis.raf(time * 1000);
+					});
+
+					gsap.ticker.lagSmoothing(0);
+					ScrollTrigger.scrollerProxy(scrollContainer, {
+						scrollTop(value) {
+							return arguments.length
+							? lenis.scrollTo(value, { immediate: true })
+							: lenis.scroll;
+						},
+						getBoundingClientRect() {
+							return {
+								top: 0,
+								left: 0,
+								width: scrollContainer.clientWidth,
+								height: scrollContainer.clientHeight,
+							};
+						},
+					});
+					modal?.addEventListener("close", () => {
+						lenis.destroy();
+					});
+				};
+				const modalElement = document.getElementById(name_of_modal);
+				const observer = new MutationObserver((mutations) => {
+					mutations.forEach((mutation) => {
+						if (mutation.attributeName === "open") {
+							const isOpen = modalElement?.hasAttribute("open");
+							if (isOpen) {
+								setTimeout(() => {
+									initModalScroll();
+									ScrollTrigger.refresh();
+								}, 100);
+							}
+						}
+					});
+				});
+				observer.observe(modalElement, { attributes: true });
+			}
+
+			for (let i = 1; i <= 4; i++){
+				scroll_animasi(
+					"my_modal_"+i,
+					"modal-scroll-container"+i,
+					"modal-content-wrapper"+i
+				)
+			}
+			// smoothscroll---------------
+
+			// urutan posisi
+			function urutan(
+				identify: gsap.TweenTarget,
+				fromY: number,
+				toY: number,
+				delaying: number,
+			) {
+				gsap.fromTo(
+					identify,
+					{
+						y: fromY,
+						opacity: 0,
+					},
+					{
+						y: toY,
+						opacity: 1,
+						duration: 1.5,
+						ease: "power2.out",
+						delay: delaying,
+					},
+				);
+			}
+			// urutan posisi
+
+			// button atas
+			urutan(".button_blogs", 50, 0, 2);
+			urutan(".button_hasqibar", 50, 0, 2);
+			// button atas
+
+			// timeline master
+			// head
+			urutan(".foto-gw", 50, 0, 0);
+			urutan(".nama-gw", 50, 0, 0.5);
+			urutan(".nama-gw-sub", 50, 0, 0.6);
+			urutan(".title-sub", 50, 0, 0.7);
+			urutan(".desc-sub", 50, 0, 0.8);
+			// head
+
+			// button down
+			urutan(".projects", 50, 0, 0.9);
+			urutan(".partners", 50, 0, 1.2);
+			urutan(".design-work", 50, 0, 1.5);
+			urutan(".experience", 50, 0, 1.8);
+			// button down
+
+			// sosial media
+			urutan(".sos_4", 50, 0, 1.8);
+			urutan(".sos_3", 50, 0, 1.7);
+			urutan(".sos_2", 50, 0, 1.7);
+			urutan(".sos_1", 50, 0, 1.8);
+			// sosial media
+
+			// timeline master
+
+			// looping 3 elements
+			const list = document.querySelector(".text-list");
+			const items = document.querySelectorAll(".text-list li");
+			const stepHeight = items[1].offsetTop - items[0].offsetTop;
+			const clone = items[0].cloneNode(true);
+			list.appendChild(clone);
+			const tl = gsap.timeline({ repeat: -1 });
+			items.forEach((_, index) => {
+				tl.to(list, {
+					y: -stepHeight * (index + 1),
+					duration: 1,
+					delay: 2,
+					ease: "power2.inOut",
+				});
+			});
+			tl.set(list, { y: 0 });
+			// looping 3 elements
+
+			// theming
+			function getInitialTheme() {
+				const storedTheme = localStorage.getItem("theme");
+				if (storedTheme) {
+					return storedTheme;
+				}
+				if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+					return "luxury";
+				}
+				return "lemonade";
+			}
+			const theme = getInitialTheme();
+			document.documentElement.setAttribute("data-theme", theme);
+			// theming
+		</script>
+	</body>
+</html>
+
+<style>
+	html,
+	body {
+		margin: 0;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		padding: 10px;
+	}
+</style>
